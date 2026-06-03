@@ -1,0 +1,9 @@
+{
+	"id": "floating-heading",
+	"name": "Floating Heading",
+	"version": "1.0.0",
+	"minAppVersion": "0.15.0",
+	"description": "Extracts current heading to a draggable floating window.",
+	"author": "hornat",
+	"isDesktopOnly": true
+}

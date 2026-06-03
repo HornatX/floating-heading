@@ -1,0 +1,185 @@
+/* 悬浮标题容器 */
+.floating-heading-container {
+    position: absolute;
+    z-index: var(--layer-popover, 50); 
+    background-color: var(--background-primary-alt);
+    border: 1px solid var(--background-modifier-border);
+    padding: 8px 16px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    color: var(--text-normal);
+    user-select: none;
+    transition: box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+/* 允许拖动时的样式 */
+.floating-heading-container.is-draggable {
+    cursor: pointer;
+}
+
+.floating-heading-container.is-draggable:active {
+    cursor: grabbing;
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* 锁定时的样式 */
+.floating-heading-container.is-locked {
+    cursor: pointer;
+    opacity: 1;
+}
+
+/* 内部文本容器 */
+.floating-heading-text {
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /* 【重点修改】：删掉 max-width: 300px; 改为 100% 跟随父容器 */
+    width: 100%; 
+    pointer-events: none;
+}
+
+/* 去掉 markdown 渲染自带的 p 标签的 margin，并确保 p 标签也能截断文字 */
+.floating-heading-text p {
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* 悬浮标题容器 */
+.floating-heading-container {
+    position: absolute;
+    z-index: var(--layer-popover, 50); 
+    background-color: var(--background-primary-alt);
+    border: 1px solid var(--background-modifier-border);
+    padding: 8px 16px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    color: var(--text-normal);
+    user-select: none;
+    transition: box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+/* 允许拖动时的样式 */
+.floating-heading-container.is-draggable {
+    cursor: pointer;
+}
+
+.floating-heading-container.is-draggable:active {
+    cursor: grabbing;
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* 锁定时的样式 */
+.floating-heading-container.is-locked {
+    cursor: pointer;
+    opacity: 1;
+}
+
+/* 内部文本容器 */
+.floating-heading-text {
+    font-weight: bold;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /* 【重点修改】：删掉 max-width: 300px; 改为 100% 跟随父容器 */
+    width: 100%; 
+    pointer-events: none;
+}
+
+/* 去掉 markdown 渲染自带的 p 标签的 margin，并确保 p 标签也能截断文字 */
+.floating-heading-text p {
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* =========== 新增：拖拽改变大小的感应区域 =========== */
+.floating-heading-container .resize-handle {
+    position: absolute;
+    display: none; /* 默认隐藏 */
+}
+
+/* 仅在未锁定（可拖拽）时显示感应区 */
+.floating-heading-container.is-draggable .resize-handle {
+    display: block;
+}
+
+/* 右边缘感应区 (调宽) */
+.floating-heading-container .resize-handle.right {
+    top: 0;
+    right: -3px;
+    width: 8px;
+    height: 100%;
+    cursor: ew-resize;
+}
+
+/* 下边缘感应区 (调字号) */
+.floating-heading-container .resize-handle.bottom {
+    bottom: -3px;
+    left: 0;
+    width: 100%;
+    height: 8px;
+    cursor: ns-resize;
+}
+
+/* 右下角感应区 (同时调宽和字号) */
+.floating-heading-container .resize-handle.corner {
+    bottom: -4px;
+    right: -4px;
+    width: 12px;
+    height: 12px;
+    cursor: nwse-resize;
+    z-index: 10;
+}
+
+/* 当没有标题时显示的 Logo 模式 */
+.floating-heading-container.is-empty-logo {
+    display: flex ;
+    align-items: center;
+    justify-content: center;
+    /* 强行去除非 Logo 模式时的横向边距，确保完美正方形内部结构 */
+    padding: 0 !important; 
+    border-radius: 50% !important; /* 强制化为正圆 */
+}
+
+/* Logo 模式下的 Obsidian 原生图标容器 */
+.floating-heading-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.2em; /* 稍微比 1em 大一点点，因为 Lucide 图标自带内边距，放大能让图标显得更饱满 */
+    height: 1.2em;
+    opacity: 0.6;
+}
+
+.floating-heading-icon svg {
+    width: 100%;
+    height: 100%;
+    stroke-width: 2.5px; /* 让图标稍微粗壮一点，看着更像 Logo */
+}
+
+
+
+/* 悬浮标题容器 */
+.floating-heading-container {
+    position: absolute;
+    z-index: var(--layer-popover, 50); 
+    background-color: var(--background-primary-alt);
+    border: 1px solid var(--background-modifier-border);
+    padding: 8px 16px;
+    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    color: var(--text-normal);
+    user-select: none;
+    transition: box-shadow 0.2s ease, opacity 0.2s ease;
+}
+
+/* 允许拖动时的样式 */
+.floating-heading-container.is-draggable {
+    cursor: pointer;
+}
+
+.floating-heading-container.is-draggable:active {
+    cursor: grabbing;
+    box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.6);
+}
