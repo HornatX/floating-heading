@@ -22,6 +22,7 @@ interface FloatingHeadingSettings {
     posY: number;
     isWidthUnlimited: boolean;
     maxWidth: number;
+    isManuallyHidden: boolean; // 【新增】：记录窗口显隐状态
 }
 
 const DEFAULT_SETTINGS: FloatingHeadingSettings = {
@@ -32,7 +33,8 @@ const DEFAULT_SETTINGS: FloatingHeadingSettings = {
     posX: 50,
     posY: 50,
     isWidthUnlimited: true,
-    maxWidth: 300
+    maxWidth: 300,
+    isManuallyHidden: false // 【新增】：默认不隐藏
 };
 
 const headingExp = /^HyperMD-header_HyperMD-header-(\d)$/;
@@ -73,7 +75,6 @@ export default class FloatingHeadingPlugin extends Plugin {
     activeEditorView: EditorView | null = null;
     isValidFile: boolean = false;
     headingTrackerInstance: any = null; // 引用当前的 tracker 实例
-    isManuallyHidden: boolean = false;
 
     resizeHandleRight!: HTMLDivElement;
     resizeHandleBottom!: HTMLDivElement;
@@ -85,10 +86,14 @@ export default class FloatingHeadingPlugin extends Plugin {
         this.addCommand({
             id: 'toggle-floating-heading',
             name: '切换悬浮标题窗口显隐',
-            callback: () => {
-                this.isManuallyHidden = !this.isManuallyHidden;
+            callback: async () => { // 【注意】：加上 async
+                // 修改 settings 里的状态
+                this.settings.isManuallyHidden = !this.settings.isManuallyHidden;
+                // 保存到本地文件 (data.json)
+                await this.saveSettings(); 
+                
                 this.updateVisibility();
-                new Notice(this.isManuallyHidden ? "悬浮标题已隐藏" : "悬浮标题已显示", 1500);
+                new Notice(this.settings.isManuallyHidden ? "悬浮标题已隐藏" : "悬浮标题已显示", 1500);
             }
         });
 
@@ -138,7 +143,8 @@ export default class FloatingHeadingPlugin extends Plugin {
     updateVisibility() {
         if (!this.floatingContainer) return;
 
-        const shouldShow = !this.isManuallyHidden && this.isValidFile;
+        // 【修改】：使用 this.settings.isManuallyHidden 进行判断
+        const shouldShow = !this.settings.isManuallyHidden && this.isValidFile;
 
         if (shouldShow) {
             this.floatingContainer.style.display = '';
