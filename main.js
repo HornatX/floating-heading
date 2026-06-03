@@ -33,7 +33,9 @@ var DEFAULT_SETTINGS = {
   posX: 50,
   posY: 50,
   isWidthUnlimited: true,
-  maxWidth: 300
+  maxWidth: 300,
+  isManuallyHidden: false
+  // 【新增】：默认不隐藏
 };
 var headingExp = /^HyperMD-header_HyperMD-header-(\d)$/;
 function getDistanceFromContentToScroller(view) {
@@ -70,18 +72,17 @@ var FloatingHeadingPlugin = class extends import_obsidian.Plugin {
     this.activeEditorView = null;
     this.isValidFile = false;
     this.headingTrackerInstance = null;
-    // 引用当前的 tracker 实例
-    this.isManuallyHidden = false;
   }
   async onload() {
     await this.loadSettings();
     this.addCommand({
       id: "toggle-floating-heading",
       name: "\u5207\u6362\u60AC\u6D6E\u6807\u9898\u7A97\u53E3\u663E\u9690",
-      callback: () => {
-        this.isManuallyHidden = !this.isManuallyHidden;
+      callback: async () => {
+        this.settings.isManuallyHidden = !this.settings.isManuallyHidden;
+        await this.saveSettings();
         this.updateVisibility();
-        new import_obsidian.Notice(this.isManuallyHidden ? "\u60AC\u6D6E\u6807\u9898\u5DF2\u9690\u85CF" : "\u60AC\u6D6E\u6807\u9898\u5DF2\u663E\u793A", 1500);
+        new import_obsidian.Notice(this.settings.isManuallyHidden ? "\u60AC\u6D6E\u6807\u9898\u5DF2\u9690\u85CF" : "\u60AC\u6D6E\u6807\u9898\u5DF2\u663E\u793A", 1500);
       }
     });
     this.addSettingTab(new FloatingHeadingSettingTab(this.app, this));
@@ -123,7 +124,7 @@ var FloatingHeadingPlugin = class extends import_obsidian.Plugin {
   }
   updateVisibility() {
     if (!this.floatingContainer) return;
-    const shouldShow = !this.isManuallyHidden && this.isValidFile;
+    const shouldShow = !this.settings.isManuallyHidden && this.isValidFile;
     if (shouldShow) {
       this.floatingContainer.style.display = "";
     } else {
