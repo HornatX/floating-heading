@@ -1,25 +1,23 @@
 Floating Heading (悬浮标题)
 
-适用于 Obsidian
-的当前标题悬浮追踪插件。在阅读或编辑长笔记时，为您在页面边缘提供一个可移动、可自适应的悬浮指示器，帮助您快速了解当前所处的笔记章节位置并一键返回。
+适用于 Obsidian 的视线随动悬浮标题插件。在您滚动阅读长笔记时，提供一个可拖拽、可缩放且支持一键定位的悬浮窗口，实时显示您当前所处的标题范围。
+
+插件还在测试当中，如果有 bug 或错误，加群讨论。 QQ 交流群: 1094620986
 
 功能特点
 
-  - 标题层级追踪：可自由设定需要追踪并显示的标题级别（H1 到
-    H6）。随着页面滚动，悬浮窗将实时反映当前视野上方的最新标题内容，点击该窗口可一键跳转回该标题位置。
-  - 自适应 Logo 模式：当笔记上方没有对应级别的标题时，悬浮窗会自动缩起，变为精简的圆形图标，减少对正文的视觉干扰。
-  - 直观的交互调节：
-      - 支持任意位置拖拽移动。
-      - 支持拖拽边缘实时调整字体大小与最大宽度限制。
-      - 右键点击悬浮窗可直接呼出快捷菜单，进行快速锁定位置或切换当前追踪的标题级别。
-  - 智能视图兼容：自动识别并避开 Canvas（白板）、Kanban（看板）以及第三方
-    Database（数据库）等特殊视图，避免在非传统文本编辑区造成视觉混乱。
+  - 实时标题追踪：随着页面滚动，智能计算并显示当前视口所属的指定标题层级（支持自定义 H1 到 H6 级别）。
+  - 极简图标模式：当滚动到文档开头、未到达指定标题上方时，悬浮窗自动缩起为精美的正圆形层级图标（例如 H2 图标按钮），极大减少视觉干扰。
+  - 自由交互与锁定：支持在屏幕任意位置自由拖拽，拖动边缘或角落可缩放窗口字号与最大宽度限制。支持通过右键菜单快速一键锁定位置，防止日常编辑时误触。
+  - 一键回弹定位：鼠标轻点悬浮窗口，编辑器的视线将立刻顺畅地自动滚动并定位到该标题的起始位置，方便随时跳转。
+  - 智能避让与过滤：自动在白板 (Canvas)、看板 (Kanban)、数据库 (Database/DB Folder) 以及非 Markdown
+    文件中隐藏，确保不干扰您的其他专业工作区。
 
 安装方法
 
-社区插件安装
+社区插件安装（推荐）
 
-待插件正式上架后，可在 Obsidian 内直接安装：
+待插件上架后，可在 Obsidian 内直接安装：
 
 1.  打开 Obsidian 设置 > 社区插件。
 2.  点击 浏览 并搜索 Floating Heading。
@@ -27,48 +25,45 @@ Floating Heading (悬浮标题)
 
 手动安装
 
-1.  下载最新发布的构建包（main.js, manifest.json, styles.css）。
+1.  从 Releases 页面下载最新版发布包（main.js, manifest.json, styles.css）。
 2.  在您的库中创建插件目录：<库路径>/.obsidian/plugins/floating-heading/。
 3.  将下载的文件放入该目录中。
 4.  打开 Obsidian 设置 > 社区插件，开启该插件。
 
 使用说明
 
-1.  开启插件后，页面上会出现一个带有当前设置标题层级（默认 H2）图标或文字的悬浮窗。
-2.  移动位置：直接左键按住悬浮窗非边缘区域拖拽即可。
-3.  调整大小：在非锁定状态下，将鼠标指针悬停于悬浮窗边缘，按住右侧或底部边缘手柄拖动，即可调整窗口最大宽度或文字大小。
-4.  快速操作：在悬浮窗上点击 右键，可快速锁定当前位置（防止误触移动）或更改要追踪的标题级别。
-5.  快捷键显隐：支持通过命令面板或为其绑定快捷键，快速切换悬浮窗的显示或隐藏。
+1.  开启插件后，屏幕上即可显示悬浮标题窗口。
+2.  在非锁定状态下，按住窗口主体可自由调整其在屏幕上的位置；拖拽其边缘或角落（右下角）的手柄可以自由缩放字体大小或设定最大宽度。
+3.  在悬浮窗上点击 右键 可以快速开启位置锁定（锁定后将不可被拖拽或调整大小），或者快速切换需要追踪的标题层级（H1 - H6）。
+4.  通过命令面板可以一键切换悬浮窗的全局显隐。
 
 English
 
-An Obsidian plugin that displays a customizable floating indicator tracking the
-active heading as you read or edit long notes, helping you maintain context and
-quickly jump back to sections.
+An interactive, responsive floating window plugin for Obsidian that tracks and
+displays your current heading level as you scroll, allowing you to easily view,
+move, and jump back with a single click.
 
 Features
 
-  - Active Heading Tracking: Tracks your chosen heading level (H1 to H6). As you
-    scroll through a note, the indicator dynamically updates to display the
-    active section header. Click it to scroll instantly back to that heading.
-  - Adaptive Logo Mode: When no heading of your target level is currently in
-    view, the floating container automatically collapses into a compact, round
-    icon, reducing visual clutter.
-  - Intuitive Interactions:
-      - Drag anywhere on the container to reposition it freely.
-      - Drag the handles on the edges to resize the font size and customize the
-        maximum width constraint in real time.
-      - Right-click the container to open a context menu for locking its
-        position or changing the tracked heading level on the fly.
-  - Smart View Interception: Automatically detects and bypasses Canvas, Kanban,
-    and Database views to prevent interface layout issues in specialized
-    workspaces.
+  - Real-time Tracking: Intelligently calculates and displays the active heading
+    of your configured level (H1 to H6) as you scroll through long notes.
+  - Minimalist Icon Mode: When no heading of the target level is active (e.g.,
+    at the very top of a note), the window smoothly collapses into a neat,
+    circular Lucide icon badge, saving valuable screen estate.
+  - Draggable, Resizable & Lockable: Freely drag the window anywhere on your
+    screen. Adjust the text size or limit the maximum width by dragging the
+    handles. Lock it via the right-click menu to prevent accidental moves.
+  - Instant Jump Back: Click the floating window to instantly scroll the editor
+    back to the start of the current heading.
+  - Smart Filtering: Automatically hides itself inside Canvas, Kanban,
+    Databases, or non-Markdown files to keep your visual workspace tidy and
+    uncluttered.
 
 Installation
 
-Community Plugins
+Community Plugins (Recommended)
 
-Once approved, you can install this plugin directly within Obsidian:
+Once this plugin is approved, you can install it directly from Obsidian:
 
 1.  Open Obsidian Settings > Community plugins.
 2.  Click Browse and search for Floating Heading.
@@ -76,8 +71,8 @@ Once approved, you can install this plugin directly within Obsidian:
 
 Manual Installation
 
-1.  Download the compiled files (main.js, manifest.json, styles.css) from the
-    release page.
+1.  Download the latest release (main.js, manifest.json, styles.css) from the
+    Releases page.
 2.  Create a folder named floating-heading under your vault's plugin directory:
     <vault>/.obsidian/plugins/floating-heading/.
 3.  Copy the downloaded files into that folder.
@@ -85,13 +80,11 @@ Manual Installation
 
 Usage
 
-1.  Upon enablement, a floating window showing either the heading content or its
-    level icon (defaulting to H2) will appear on your screen.
-2.  Move: Click and drag the main body of the container to position it anywhere
-    in your workspace.
-3.  Resize: When unlocked, hover over the edges and drag the right or bottom
-    handles to scale the font size or adjust the maximum width.
-4.  Quick Menu: Right-click the container to lock/unlock its position or switch
-    the active heading level.
-5.  Toggle Command: Use the Command Palette or assign a hotkey to easily show or
-    hide the floating window whenever needed.
+1.  Once enabled, the floating heading tracker will appear on your screen.
+2.  When unlocked, drag the window body to reposition it, and drag the
+    bottom/right/corner handles to scale its font size or adjust the maximum
+    width constraint.
+3.  Right-click on the window to lock/unlock its position or switch your
+    targeted heading tracker level (H1 to H6) dynamically.
+4.  Use the Command Palette to toggle the visibility of the floating window at
+    any time.
