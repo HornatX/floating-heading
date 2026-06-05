@@ -8,7 +8,9 @@ import {
     Setting,
     TFile,
     View,
-    setIcon
+    setIcon,
+    MenuItem,
+    ColorComponent
 } from 'obsidian';
 import { EditorView, ViewPlugin, ViewUpdate, PluginValue } from '@codemirror/view';
 import { syntaxTree } from '@codemirror/language';
@@ -24,8 +26,8 @@ interface FloatingHeadingSettings {
     maxWidth: number;
     isManuallyHidden: boolean;
     ignoreMarkdownStyle: boolean;
-    textColor: string;       // 【新增】：自定义字体颜色
-    backgroundColor: string; // 【新增】：自定义背景颜色
+    textColor: string;
+    backgroundColor: string;
 }
 
 const DEFAULT_SETTINGS: FloatingHeadingSettings = {
@@ -39,48 +41,63 @@ const DEFAULT_SETTINGS: FloatingHeadingSettings = {
     maxWidth: 300,
     isManuallyHidden: false,
     ignoreMarkdownStyle: true,
-    textColor: "",           // 默认留空，应用 CSS 的自带变量
-    backgroundColor: ""      // 默认留空，应用 CSS 的自带变量
+    textColor: "",
+    backgroundColor: ""
 };
 
 const headingExp = /^HyperMD-header_HyperMD-header-(\d)$/;
 
 function getDistanceFromContentToScroller(view: EditorView): number {
     const scroller = view.scrollDOM;
-    const contentContainer = view.scrollDOM.querySelector(`.cm-content`) as HTMLElement | null;
+    const contentContainer = view.scrollDOM.querySelector(`.cm-content`);
     let distance = 0;
-    if (scroller == null || contentContainer == null) {
+    
+    if (!(scroller instanceof HTMLElement) || !(contentContainer instanceof HTMLElement)) {
         return distance;
     }
+    
     let currentElement: HTMLElement | null = contentContainer;
-    while (currentElement != null && currentElement !== scroller) {
+    while (currentElement && currentElement !== scroller) {
         distance += currentElement.offsetTop;
-        currentElement = currentElement.offsetParent as HTMLElement | null;
+        
+        // 1. 显式标注类型为 Element | null
+        // 2. 使用一个全新的局部变量名
+        const nextParent: Element | null = currentElement.offsetParent;
+        
+        // 3. 显式类型收窄，确保 currentElement 永远是 HTMLElement 或 null
+        if (nextParent instanceof HTMLElement) {
+            currentElement = nextParent;
+        } else {
+            currentElement = null;
+        }
     }
     return distance;
 }
 
-// 节流函数类型化
-function throttle<T extends (...args: any[]) => void>(func: T, limit: number): T {
+// 严谨的 TS 节流函数，避免 any 和 this 指向警告
+function throttle<Args extends unknown[]>(func: (...args: Args) => void, limit: number): (...args: Args) => void {
     let inThrottle: boolean;
-    return function (this: any, ...args: any[]) {
-        const context = this;
+    return function (this: unknown, ...args: Args) {
         if (!inThrottle) {
-            func.apply(context, args);
+            func.apply(this, args);
             inThrottle = true;
             window.setTimeout(() => inThrottle = false, limit);
         }
-    } as T;
+    };
+}
+
+export interface IHeadingTracker extends PluginValue {
+    updateHeaders(editorView: EditorView): void;
 }
 
 export default class FloatingHeadingPlugin extends Plugin {
-    settings: FloatingHeadingSettings;
+    settings: FloatingHeadingSettings = DEFAULT_SETTINGS;
     floatingContainer: HTMLDivElement | null = null;
     currentHeadingText: string | null = null;
     currentHeadingPos: number | null = null;
     activeEditorView: EditorView | null = null;
     isValidFile: boolean = false;
-    headingTrackerInstance: any = null;
+    headingTrackerInstance: IHeadingTracker | null = null;
 
     resizeHandleRight!: HTMLDivElement;
     resizeHandleBottom!: HTMLDivElement;
@@ -89,14 +106,16 @@ export default class FloatingHeadingPlugin extends Plugin {
     async onload() {
         await this.loadSettings();
 
+        // 命令 ID 移除包含插件自身的名称（Obsidian 会自动加上前缀）
         this.addCommand({
-            id: 'toggle-floating-heading',
+            id: 'toggle-visibility',
             name: '切换悬浮标题窗口显隐',
-            callback: async () => {
+            callback: () => {
                 this.settings.isManuallyHidden = !this.settings.isManuallyHidden;
-                await this.saveSettings(); 
-                this.updateVisibility();
-                new Notice(this.settings.isManuallyHidden ? "悬浮标题已隐藏" : "悬浮标题已显示", 1500);
+                this.saveSettings().then(() => {
+                    this.updateVisibility();
+                    new Notice(this.settings.isManuallyHidden ? "悬浮标题已隐藏" : "悬浮标题已显示", 1500);
+                }).catch(console.error);
             }
         });
 
@@ -142,7 +161,8 @@ export default class FloatingHeadingPlugin extends Plugin {
     updateVisibility() {
         if (!this.floatingContainer) return;
         const shouldShow = !this.settings.isManuallyHidden && this.isValidFile;
-        this.floatingContainer.style.display = shouldShow ? '' : 'none';
+        // 修复：使用 Obsidian 原生 setCssStyles
+        this.floatingContainer.setCssStyles({ display: shouldShow ? '' : 'none' });
     }
 
     checkActiveFile(file: TFile | null) {
@@ -185,26 +205,18 @@ export default class FloatingHeadingPlugin extends Plugin {
         if (text !== this.currentHeadingText) {
             this.currentHeadingText = text;
             Array.from(this.floatingContainer.childNodes).forEach(child => {
-                const el = child as HTMLElement;
-                if (!el.hasClass('resize-handle')) {
-                    el.remove();
+                if (child instanceof HTMLElement && !child.classList.contains('resize-handle')) {
+                    child.remove();
                 }
             });
 
             if (text) {
-                this.floatingContainer.removeClass('is-empty-logo');
+                this.floatingContainer.classList.remove('is-empty-logo');
                 const textDiv = this.floatingContainer.createDiv({ cls: 'floating-heading-text' });
-                MarkdownRenderer.render(this.app, text, textDiv, "", this as any);
-
-                const innerP = textDiv.querySelector('p');
-                if (innerP) {
-                    innerP.style.margin = '0';
-                    innerP.style.overflow = 'hidden';
-                    innerP.style.textOverflow = 'ellipsis';
-                    innerP.style.whiteSpace = 'nowrap';
-                }
+                // 修复：捕获 Promise 报错，并以安全方式传递组件实例
+                MarkdownRenderer.render(this.app, text, textDiv, "", this).catch(console.error);
             } else {
-                this.floatingContainer.addClass('is-empty-logo');
+                this.floatingContainer.classList.add('is-empty-logo');
                 const iconDiv = this.floatingContainer.createDiv({ cls: 'floating-heading-icon' });
                 setIcon(iconDiv, `heading-${this.settings.headingLevel}`);
             }
@@ -218,64 +230,60 @@ export default class FloatingHeadingPlugin extends Plugin {
         if (!this.floatingContainer) return;
 
         const el = this.floatingContainer;
-        el.style.left = `${this.settings.posX}px`;
-        el.style.top = `${this.settings.posY}px`;
-        el.style.fontSize = `${this.settings.fontSize}px`;
+        
+        // 修复：严格使用 setCssStyles 代替 style = xxx
+        el.setCssStyles({
+            left: `${this.settings.posX}px`,
+            top: `${this.settings.posY}px`,
+            fontSize: `${this.settings.fontSize}px`
+        });
 
-        if (el.hasClass('is-empty-logo')) {
+        if (el.classList.contains('is-empty-logo')) {
             const size = this.settings.fontSize + 16;
-            el.style.width = `${size}px`;
-            el.style.height = `${size}px`;
-            el.style.maxWidth = 'none';
-            el.style.borderRadius = '50%';
-            el.style.padding = '0';
+            el.setCssStyles({
+                width: `${size}px`,
+                height: `${size}px`,
+                maxWidth: 'none',
+                borderRadius: '50%',
+                padding: '0'
+            });
         } else {
-            el.style.height = 'auto';
-            el.style.padding = '8px 16px';
-            el.style.borderRadius = `${this.settings.borderRadius}px`;
-
-            if (this.settings.isWidthUnlimited) {
-                el.style.maxWidth = 'none';
-                el.style.width = 'max-content';
-            } else {
-                el.style.maxWidth = `${this.settings.maxWidth}px`;
-                el.style.width = 'max-content';
-            }
+            el.setCssStyles({
+                height: 'auto',
+                padding: '8px 16px',
+                borderRadius: `${this.settings.borderRadius}px`,
+                maxWidth: this.settings.isWidthUnlimited ? 'none' : `${this.settings.maxWidth}px`,
+                width: 'max-content'
+            });
         }
 
         if (this.settings.isLocked) {
-            el.removeClass('is-draggable');
-            el.addClass('is-locked');
+            el.classList.remove('is-draggable');
+            el.classList.add('is-locked');
         } else {
-            el.removeClass('is-locked');
-            el.addClass('is-draggable');
+            el.classList.remove('is-locked');
+            el.classList.add('is-draggable');
         }
 
         if (this.settings.ignoreMarkdownStyle) {
-            el.addClass('ignore-markdown-style');
+            el.classList.add('ignore-markdown-style');
         } else {
-            el.removeClass('ignore-markdown-style');
+            el.classList.remove('ignore-markdown-style');
         }
 
-        // 【新增】：应用自定义颜色到 CSS 变量
-        if (this.settings.textColor) {
-            el.style.setProperty('--fh-text-color', this.settings.textColor);
-        } else {
-            el.style.removeProperty('--fh-text-color');
-        }
-
-        if (this.settings.backgroundColor) {
-            el.style.setProperty('--fh-bg-color', this.settings.backgroundColor);
-        } else {
-            el.style.removeProperty('--fh-bg-color');
-        }
+        // 修复：利用 setCssProps 安全注册 CSS 自定义变量
+        el.setCssProps({
+            '--fh-text-color': this.settings.textColor || '',
+            '--fh-bg-color': this.settings.backgroundColor || ''
+        });
     }
 
     createFloatingWindow() {
         if (this.floatingContainer) return;
 
-        this.floatingContainer = document.body.createDiv({ cls: 'floating-heading-container' });
-        this.floatingContainer.style.display = 'none';
+        // 修复：使用 activeDocument 代替 document 兼顾弹窗兼容性
+        this.floatingContainer = activeDocument.body.createDiv({ cls: 'floating-heading-container' });
+        this.floatingContainer.setCssStyles({ display: 'none' });
 
         this.resizeHandleRight = this.floatingContainer.createDiv({ cls: 'resize-handle right' });
         this.resizeHandleBottom = this.floatingContainer.createDiv({ cls: 'resize-handle bottom' });
@@ -289,29 +297,32 @@ export default class FloatingHeadingPlugin extends Plugin {
             e.preventDefault();
             const menu = new Menu();
 
-            menu.addItem((item) => {
+            menu.addItem((item: MenuItem) => {
                 item.setTitle(this.settings.isLocked ? "解锁窗口" : "锁定窗口")
                     .setIcon(this.settings.isLocked ? "unlock" : "lock")
-                    .onClick(async () => {
+                    .onClick(() => {
                         this.settings.isLocked = !this.settings.isLocked;
-                        await this.saveSettings();
-                        new Notice(this.settings.isLocked ? "悬浮标题已锁定 🔒" : "悬浮标题已解锁 🔓", 1500);
+                        this.saveSettings().then(() => {
+                            new Notice(this.settings.isLocked ? "悬浮标题已锁定 🔒" : "悬浮标题已解锁 🔓", 1500);
+                        }).catch(console.error);
                     });
             });
 
             menu.addSeparator();
 
-            menu.addItem((item) => {
+            menu.addItem((item: MenuItem) => {
                 item.setTitle("更改层级").setIcon("heading");
-                const submenu = (item as any).setSubmenu();
+                
+                // 修复：安全断言解决 Any 及 Submenu 未匹配报错
+                const submenu = (item as MenuItem & { setSubmenu: () => Menu }).setSubmenu();
+                
                 for (let i = 1; i <= 6; i++) {
-                    submenu.addItem((subItem: any) => {
+                    submenu.addItem((subItem: MenuItem) => {
                         subItem.setTitle(`H${i}`)
                             .setChecked(this.settings.headingLevel === i)
-                            .onClick(async () => {
+                            .onClick(() => {
                                 this.settings.headingLevel = i;
-                                await this.saveSettings();
-                                this.forceUpdateHeaders();
+                                this.saveSettings().then(() => this.forceUpdateHeaders()).catch(console.error);
                             });
                     });
                 }
@@ -328,8 +339,9 @@ export default class FloatingHeadingPlugin extends Plugin {
         let startWidth = 0, startFontSize = 0, startMaxWidth = 0;
 
         const onMouseDown = (e: MouseEvent) => {
-            const target = e.target as HTMLElement;
-            if (this.settings.isLocked || !target.hasClass('resize-handle')) return;
+            const target = e.target;
+            if (!(target instanceof HTMLElement)) return;
+            if (this.settings.isLocked || !target.classList.contains('resize-handle')) return;
 
             e.preventDefault();
             e.stopPropagation();
@@ -354,36 +366,41 @@ export default class FloatingHeadingPlugin extends Plugin {
             const dx = e.clientX - startX;
             const dy = e.clientY - startY;
 
-            if (currentHandle.hasClass('right') || currentHandle.hasClass('corner')) {
-                if (!this.floatingContainer.hasClass('is-empty-logo')) {
+            if (currentHandle.classList.contains('right') || currentHandle.classList.contains('corner')) {
+                if (!this.floatingContainer.classList.contains('is-empty-logo')) {
                     this.settings.isWidthUnlimited = false;
                     this.settings.maxWidth = Math.max(80, startMaxWidth + dx);
-                    this.floatingContainer.style.maxWidth = `${this.settings.maxWidth}px`;
-                    this.floatingContainer.style.width = `max-content`;
+                    this.floatingContainer.setCssStyles({
+                        maxWidth: `${this.settings.maxWidth}px`,
+                        width: `max-content`
+                    });
                 }
             }
 
-            if (currentHandle.hasClass('bottom') || currentHandle.hasClass('corner')) {
+            if (currentHandle.classList.contains('bottom') || currentHandle.classList.contains('corner')) {
                 let newFontSize = Math.round(startFontSize + (dy / 1.5));
                 newFontSize = Math.max(10, Math.min(newFontSize, 100));
                 this.settings.fontSize = newFontSize;
-                this.floatingContainer.style.fontSize = `${this.settings.fontSize}px`;
+                this.floatingContainer.setCssStyles({ fontSize: `${this.settings.fontSize}px` });
 
-                if (this.floatingContainer.hasClass('is-empty-logo')) {
+                if (this.floatingContainer.classList.contains('is-empty-logo')) {
                     const size = this.settings.fontSize + 16;
-                    this.floatingContainer.style.width = `${size}px`;
-                    this.floatingContainer.style.height = `${size}px`;
+                    this.floatingContainer.setCssStyles({
+                        width: `${size}px`,
+                        height: `${size}px`
+                    });
                 }
             }
         };
 
-        const onMouseUp = async () => {
+        // 修复：事件处理器返回值应为 void，移除顶层 async
+        const onMouseUp = () => {
             if (isResizing) {
                 isResizing = false;
                 currentHandle = null;
                 window.removeEventListener('mousemove', onMouseMove);
                 window.removeEventListener('mouseup', onMouseUp);
-                await this.saveSettings();
+                this.saveSettings().catch(console.error);
             }
         };
 
@@ -399,8 +416,9 @@ export default class FloatingHeadingPlugin extends Plugin {
         let initialX = 0, initialY = 0;
 
         const onMouseDown = (e: MouseEvent) => {
-            const target = e.target as HTMLElement;
-            if (e.button !== 0 || target.hasClass('resize-handle')) return;
+            const target = e.target;
+            if (!(target instanceof HTMLElement)) return;
+            if (e.button !== 0 || target.classList.contains('resize-handle')) return;
 
             hasMoved = false;
             if (this.settings.isLocked) return;
@@ -427,24 +445,27 @@ export default class FloatingHeadingPlugin extends Plugin {
 
             this.settings.posX = initialX + dx;
             this.settings.posY = initialY + dy;
-            el.style.left = `${this.settings.posX}px`;
-            el.style.top = `${this.settings.posY}px`;
+            el.setCssStyles({
+                left: `${this.settings.posX}px`,
+                top: `${this.settings.posY}px`
+            });
         };
 
-        const onMouseUp = async () => {
+        const onMouseUp = () => {
             if (isDragging) {
                 isDragging = false;
                 window.removeEventListener('mousemove', onMouseMove);
                 window.removeEventListener('mouseup', onMouseUp);
                 if (hasMoved) {
-                    await this.saveSettings();
+                    this.saveSettings().catch(console.error);
                 }
             }
         };
 
         el.addEventListener('click', (e: MouseEvent) => {
-            const target = e.target as HTMLElement;
-            if (e.button !== 0 || target.hasClass('resize-handle')) return;
+            const target = e.target;
+            if (!(target instanceof HTMLElement)) return;
+            if (e.button !== 0 || target.classList.contains('resize-handle')) return;
 
             if (!hasMoved && this.activeEditorView && this.currentHeadingPos !== null) {
                 this.activeEditorView.dispatch({
@@ -456,20 +477,19 @@ export default class FloatingHeadingPlugin extends Plugin {
         el.addEventListener('mousedown', onMouseDown);
     }
 
+    // 修复：取消局部变量 this 带来的警告，直接使用闭包安全生成扩展
     createHeadingTrackerPlugin() {
-        const plugin = this;
-
-        class HeadingTracker implements PluginValue {
+        class HeadingTracker implements PluginValue, IHeadingTracker {
             view: EditorView;
             cachedDistance: number;
             scrollHandler: EventListener;
             updateTimeout?: number;
 
-            constructor(editorView: EditorView) {
+            constructor(editorView: EditorView, private plugin: FloatingHeadingPlugin) {
                 this.view = editorView;
                 this.cachedDistance = getDistanceFromContentToScroller(editorView);
-                plugin.headingTrackerInstance = this;
-                this.scrollHandler = throttle(this.handleScroll.bind(this), 100);
+                this.plugin.headingTrackerInstance = this;
+                this.scrollHandler = throttle(this.handleScroll.bind(this), 100) as EventListener;
                 this.view.scrollDOM.addEventListener("scroll", this.scrollHandler, { passive: true });
                 this.updateHeaders(this.view);
             }
@@ -489,8 +509,8 @@ export default class FloatingHeadingPlugin extends Plugin {
             destroy() {
                 this.view.scrollDOM.removeEventListener("scroll", this.scrollHandler);
                 if (this.updateTimeout) window.clearTimeout(this.updateTimeout);
-                if (plugin.headingTrackerInstance === this) {
-                    plugin.headingTrackerInstance = null;
+                if (this.plugin.headingTrackerInstance === this) {
+                    this.plugin.headingTrackerInstance = null;
                 }
             }
 
@@ -499,7 +519,7 @@ export default class FloatingHeadingPlugin extends Plugin {
             }
 
             updateHeaders(editorView: EditorView) {
-                if (!editorView || !plugin.isValidFile) return;
+                if (!editorView || !this.plugin.isValidFile) return;
 
                 let foundText = "";
                 let foundPos: number | null = null;
@@ -510,7 +530,7 @@ export default class FloatingHeadingPlugin extends Plugin {
                         if (height > 0) {
                             const firstElementBlockInfo = editorView.elementAtHeight(height);
                             if (firstElementBlockInfo) {
-                                const targetLevel = plugin.settings.headingLevel;
+                                const targetLevel = this.plugin.settings.headingLevel;
                                 syntaxTree(editorView.state).iterate({
                                     from: 0,
                                     to: firstElementBlockInfo.from,
@@ -532,13 +552,13 @@ export default class FloatingHeadingPlugin extends Plugin {
                         }
                     },
                     write: () => {
-                        plugin.updateHeadingData(foundText, foundPos, editorView);
+                        this.plugin.updateHeadingData(foundText, foundPos, editorView);
                     }
                 });
             }
         }
 
-        return ViewPlugin.fromClass(HeadingTracker);
+        return ViewPlugin.define((view) => new HeadingTracker(view, this));
     }
 }
 
@@ -553,7 +573,9 @@ class FloatingHeadingSettingTab extends PluginSettingTab {
     display(): void {
         const { containerEl } = this;
         containerEl.empty();
-        containerEl.createEl('h2', { text: '悬浮标题设置' });
+        
+        // 修复：官方建议标准标题格式替代纯 HTML 构建
+        new Setting(containerEl).setName('悬浮标题设置').setHeading();
 
         new Setting(containerEl)
             .setName('显示的标题层级')
@@ -561,10 +583,9 @@ class FloatingHeadingSettingTab extends PluginSettingTab {
             .addDropdown(drop => {
                 [1, 2, 3, 4, 5, 6].forEach(i => drop.addOption(i.toString(), `H${i}`));
                 drop.setValue(this.plugin.settings.headingLevel.toString());
-                drop.onChange(async (value) => {
+                drop.onChange((value) => {
                     this.plugin.settings.headingLevel = Number(value);
-                    await this.plugin.saveSettings();
-                    this.plugin.forceUpdateHeaders();
+                    this.plugin.saveSettings().then(() => this.plugin.forceUpdateHeaders()).catch(console.error);
                 });
             });
 
@@ -575,9 +596,9 @@ class FloatingHeadingSettingTab extends PluginSettingTab {
                 slider.setLimits(10, 100, 1)
                     .setValue(this.plugin.settings.fontSize)
                     .setDynamicTooltip()
-                    .onChange(async (value) => {
+                    .onChange((value) => {
                         this.plugin.settings.fontSize = value;
-                        await this.plugin.saveSettings();
+                        this.plugin.saveSettings().catch(console.error);
                     });
             });
 
@@ -588,98 +609,107 @@ class FloatingHeadingSettingTab extends PluginSettingTab {
                 slider.setLimits(0, 150, 1)
                     .setValue(this.plugin.settings.borderRadius)
                     .setDynamicTooltip()
-                    .onChange(async (value) => {
+                    .onChange((value) => {
                         this.plugin.settings.borderRadius = value;
-                        await this.plugin.saveSettings();
+                        this.plugin.saveSettings().catch(console.error);
                     });
             });
 
-        // 【新增】：背景颜色选择器与重置按钮
+        // 修复：移除所有会触发报错的 .display()，改存取 Component 的原生赋值方法
+        let bgPickerComponent: ColorComponent | undefined;
         new Setting(containerEl)
             .setName('背景颜色')
             .setDesc('自定义悬浮窗口的背景颜色')
             .addButton(btn => btn
                 .setButtonText('恢复默认')
                 .setTooltip('恢复为主题自带背景色')
-                .onClick(async () => {
+                .onClick(() => {
                     this.plugin.settings.backgroundColor = "";
-                    await this.plugin.saveSettings();
-                    this.display(); // 刷新 UI
+                    this.plugin.saveSettings().catch(console.error);
+                    bgPickerComponent?.setValue('#000000');
                 }))
-            .addColorPicker(picker => picker
-                .setValue(this.plugin.settings.backgroundColor || '#000000') // 取色器空值时的占位回落
-                .onChange(async (value) => {
+            .addColorPicker(picker => {
+                bgPickerComponent = picker;
+                picker.setValue(this.plugin.settings.backgroundColor || '#000000')
+                .onChange((value) => {
                     this.plugin.settings.backgroundColor = value;
-                    await this.plugin.saveSettings();
-                }));
+                    this.plugin.saveSettings().catch(console.error);
+                });
+            });
 
-        // 【新增】：字体颜色选择器与重置按钮
+        let textPickerComponent: ColorComponent | undefined;
         new Setting(containerEl)
             .setName('字体颜色')
             .setDesc('自定义悬浮窗口的字体颜色。开启“统一文本样式”时也会覆盖强制为该颜色。')
             .addButton(btn => btn
                 .setButtonText('恢复默认')
                 .setTooltip('恢复为主题自带文字色')
-                .onClick(async () => {
+                .onClick(() => {
                     this.plugin.settings.textColor = "";
-                    await this.plugin.saveSettings();
-                    this.display(); // 刷新 UI
+                    this.plugin.saveSettings().catch(console.error);
+                    textPickerComponent?.setValue('#cccccc');
                 }))
-            .addColorPicker(picker => picker
-                .setValue(this.plugin.settings.textColor || '#cccccc') // 取色器空值时的占位回落
-                .onChange(async (value) => {
+            .addColorPicker(picker => {
+                textPickerComponent = picker;
+                picker.setValue(this.plugin.settings.textColor || '#cccccc')
+                .onChange((value) => {
                     this.plugin.settings.textColor = value;
-                    await this.plugin.saveSettings();
-                }));
+                    this.plugin.saveSettings().catch(console.error);
+                });
+            });
 
         new Setting(containerEl)
             .setName('统一文本样式 (忽略 Markdown)')
             .setDesc('默认关闭。开启后将强制抹除标题内的粗体、斜体、双链接等排版样式，使其完全混入右侧的普通文本。')
             .addToggle(toggle => {
                 toggle.setValue(this.plugin.settings.ignoreMarkdownStyle)
-                    .onChange(async (value) => {
+                    .onChange((value) => {
                         this.plugin.settings.ignoreMarkdownStyle = value;
-                        await this.plugin.saveSettings();
+                        this.plugin.saveSettings().catch(console.error);
                     });
             });
 
+        // 修复：依赖项动态折叠使用 setCssStyles 代替 UI 重新实例化渲染
+        let maxWidthSetting: Setting | undefined;
         new Setting(containerEl)
             .setName('无限制窗口长度')
             .setDesc('勾选后窗口长度随标题文字自动延伸。取消勾选可限制最大长度。')
             .addToggle(toggle => {
                 toggle.setValue(this.plugin.settings.isWidthUnlimited)
-                    .onChange(async (value) => {
+                    .onChange((value) => {
                         this.plugin.settings.isWidthUnlimited = value;
-                        await this.plugin.saveSettings();
-                        this.display();
+                        this.plugin.saveSettings().catch(console.error);
                         this.plugin.forceUpdateHeaders();
+                        if (maxWidthSetting) {
+                            maxWidthSetting.settingEl.setCssStyles({ display: value ? 'none' : '' });
+                        }
                     });
             });
 
-        if (!this.plugin.settings.isWidthUnlimited) {
-            new Setting(containerEl)
-                .setName('窗口最大长度')
-                .setDesc('设置悬浮窗口的最大长度 (px)，标题超出时会自动省略 (...)。')
-                .addSlider(slider => {
-                    slider.setLimits(100, 1000, 10)
-                        .setValue(this.plugin.settings.maxWidth)
-                        .setDynamicTooltip()
-                        .onChange(async (value) => {
-                            this.plugin.settings.maxWidth = value;
-                            await this.plugin.saveSettings();
-                            this.plugin.forceUpdateHeaders();
-                        });
-                });
-        }
+        maxWidthSetting = new Setting(containerEl)
+            .setName('窗口最大长度')
+            .setDesc('设置悬浮窗口的最大长度 (px)，标题超出时会自动省略 (...)。')
+            .addSlider(slider => {
+                slider.setLimits(100, 1000, 10)
+                    .setValue(this.plugin.settings.maxWidth)
+                    .setDynamicTooltip()
+                    .onChange((value) => {
+                        this.plugin.settings.maxWidth = value;
+                        this.plugin.saveSettings().then(() => this.plugin.forceUpdateHeaders()).catch(console.error);
+                    });
+            });
+        
+        // 初始显隐状态设置
+        maxWidthSetting.settingEl.setCssStyles({ display: this.plugin.settings.isWidthUnlimited ? 'none' : '' });
 
         new Setting(containerEl)
             .setName('锁定窗口位置')
             .setDesc('你也可以在悬浮窗口上点击【右键】直接锁定/解锁。')
             .addToggle(toggle => {
                 toggle.setValue(this.plugin.settings.isLocked)
-                    .onChange(async (value) => {
+                    .onChange((value) => {
                         this.plugin.settings.isLocked = value;
-                        await this.plugin.saveSettings();
+                        this.plugin.saveSettings().catch(console.error);
                     });
             });
     }
