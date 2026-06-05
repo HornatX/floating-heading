@@ -31,7 +31,7 @@ interface FloatingHeadingSettings {
 const DEFAULT_SETTINGS: FloatingHeadingSettings = {
     headingLevel: 2,
     fontSize: 20,
-    borderRadius: 8,
+    borderRadius: 50,
     isLocked: false,
     posX: 50,
     posY: 50,
@@ -585,7 +585,7 @@ class FloatingHeadingSettingTab extends PluginSettingTab {
             .setName('窗口圆角')
             .setDesc('悬浮窗口的圆角大小 (px)')
             .addSlider(slider => {
-                slider.setLimits(0, 30, 1)
+                slider.setLimits(0, 150, 1)
                     .setValue(this.plugin.settings.borderRadius)
                     .setDynamicTooltip()
                     .onChange(async (value) => {

@@ -28,7 +28,7 @@ var import_language = require("@codemirror/language");
 var DEFAULT_SETTINGS = {
   headingLevel: 2,
   fontSize: 20,
-  borderRadius: 8,
+  borderRadius: 50,
   isLocked: false,
   posX: 50,
   posY: 50,
@@ -477,7 +477,7 @@ var FloatingHeadingSettingTab = class extends import_obsidian.PluginSettingTab {
       });
     });
     new import_obsidian.Setting(containerEl).setName("\u7A97\u53E3\u5706\u89D2").setDesc("\u60AC\u6D6E\u7A97\u53E3\u7684\u5706\u89D2\u5927\u5C0F (px)").addSlider((slider) => {
-      slider.setLimits(0, 30, 1).setValue(this.plugin.settings.borderRadius).setDynamicTooltip().onChange(async (value) => {
+      slider.setLimits(0, 150, 1).setValue(this.plugin.settings.borderRadius).setDynamicTooltip().onChange(async (value) => {
         this.plugin.settings.borderRadius = value;
         await this.plugin.saveSettings();
       });
