@@ -34,8 +34,9 @@ var DEFAULT_SETTINGS = {
   posY: 50,
   isWidthUnlimited: true,
   maxWidth: 300,
-  isManuallyHidden: false
-  // 【新增】：默认不隐藏
+  isManuallyHidden: false,
+  ignoreMarkdownStyle: true
+  // 【新增】：默认关闭
 };
 var headingExp = /^HyperMD-header_HyperMD-header-(\d)$/;
 function getDistanceFromContentToScroller(view) {
@@ -89,14 +90,10 @@ var FloatingHeadingPlugin = class extends import_obsidian.Plugin {
     this.registerEditorExtension([this.createHeadingTrackerPlugin()]);
     this.createFloatingWindow();
     this.registerEvent(
-      this.app.workspace.on("file-open", (file) => {
-        this.checkActiveFile(file);
-      })
+      this.app.workspace.on("file-open", (file) => this.checkActiveFile(file))
     );
     this.registerEvent(
-      this.app.workspace.on("active-leaf-change", () => {
-        this.checkActiveFile(this.app.workspace.getActiveFile());
-      })
+      this.app.workspace.on("active-leaf-change", () => this.checkActiveFile(this.app.workspace.getActiveFile()))
     );
     this.registerEvent(
       this.app.metadataCache.on("changed", (file) => {
@@ -125,33 +122,21 @@ var FloatingHeadingPlugin = class extends import_obsidian.Plugin {
   updateVisibility() {
     if (!this.floatingContainer) return;
     const shouldShow = !this.settings.isManuallyHidden && this.isValidFile;
-    if (shouldShow) {
-      this.floatingContainer.style.display = "";
-    } else {
-      this.floatingContainer.style.display = "none";
-    }
+    this.floatingContainer.style.display = shouldShow ? "" : "none";
   }
   checkActiveFile(file) {
     const previousValidity = this.isValidFile;
     const activeView = this.app.workspace.getActiveViewOfType(import_obsidian.View);
     const viewType = activeView ? activeView.getViewType() : "";
     const excludedViewTypes = ["canvas", "kanban", "database", "dbfolder"];
-    if (!file) {
-      this.isValidFile = false;
-    } else if (excludedViewTypes.includes(viewType)) {
-      this.isValidFile = false;
-    } else if (file.extension !== "md") {
+    if (!file || excludedViewTypes.includes(viewType) || file.extension !== "md") {
       this.isValidFile = false;
     } else {
       const cache = this.app.metadataCache.getFileCache(file);
       const frontmatter = cache?.frontmatter || {};
       const isKanban = "kanban-plugin" in frontmatter;
       const isDatabase = "database-plugin" in frontmatter;
-      if (isKanban || isDatabase) {
-        this.isValidFile = false;
-      } else {
-        this.isValidFile = true;
-      }
+      this.isValidFile = !(isKanban || isDatabase);
     }
     if (!this.isValidFile) {
       this.currentHeadingText = null;
@@ -167,8 +152,7 @@ var FloatingHeadingPlugin = class extends import_obsidian.Plugin {
     }
   }
   updateHeadingData(text, pos, editorView) {
-    if (!this.floatingContainer) return;
-    if (!this.isValidFile) return;
+    if (!this.floatingContainer || !this.isValidFile) return;
     this.activeEditorView = editorView;
     this.currentHeadingPos = pos;
     if (text !== this.currentHeadingText) {
@@ -231,6 +215,11 @@ var FloatingHeadingPlugin = class extends import_obsidian.Plugin {
       el.removeClass("is-locked");
       el.addClass("is-draggable");
     }
+    if (this.settings.ignoreMarkdownStyle) {
+      el.addClass("ignore-markdown-style");
+    } else {
+      el.removeClass("ignore-markdown-style");
+    }
   }
   createFloatingWindow() {
     if (this.floatingContainer) return;
@@ -254,7 +243,7 @@ var FloatingHeadingPlugin = class extends import_obsidian.Plugin {
       });
       menu.addSeparator();
       menu.addItem((item) => {
-        item.setTitle("\u66F4\u6539\u663E\u793A\u6807\u9898\u5C42\u7EA7").setIcon("heading");
+        item.setTitle("\u66F4\u6539\u5C42\u7EA7").setIcon("heading");
         const submenu = item.setSubmenu();
         for (let i = 1; i <= 6; i++) {
           submenu.addItem((subItem) => {
@@ -276,8 +265,7 @@ var FloatingHeadingPlugin = class extends import_obsidian.Plugin {
     let startWidth = 0, startFontSize = 0, startMaxWidth = 0;
     const onMouseDown = (e) => {
       const target = e.target;
-      if (this.settings.isLocked) return;
-      if (!target.hasClass("resize-handle")) return;
+      if (this.settings.isLocked || !target.hasClass("resize-handle")) return;
       e.preventDefault();
       e.stopPropagation();
       isResizing = true;
@@ -335,8 +323,7 @@ var FloatingHeadingPlugin = class extends import_obsidian.Plugin {
     let initialX = 0, initialY = 0;
     const onMouseDown = (e) => {
       const target = e.target;
-      if (e.button !== 0) return;
-      if (target.hasClass("resize-handle")) return;
+      if (e.button !== 0 || target.hasClass("resize-handle")) return;
       hasMoved = false;
       if (this.settings.isLocked) return;
       isDragging = true;
@@ -371,8 +358,7 @@ var FloatingHeadingPlugin = class extends import_obsidian.Plugin {
     };
     el.addEventListener("click", (e) => {
       const target = e.target;
-      if (e.button !== 0) return;
-      if (target.hasClass("resize-handle")) return;
+      if (e.button !== 0 || target.hasClass("resize-handle")) return;
       if (!hasMoved && this.activeEditorView && this.currentHeadingPos !== null) {
         this.activeEditorView.dispatch({
           effects: import_view.EditorView.scrollIntoView(this.currentHeadingPos, { y: "start" })
@@ -463,12 +449,7 @@ var FloatingHeadingSettingTab = class extends import_obsidian.PluginSettingTab {
     containerEl.empty();
     containerEl.createEl("h2", { text: "\u60AC\u6D6E\u6807\u9898\u8BBE\u7F6E" });
     new import_obsidian.Setting(containerEl).setName("\u663E\u793A\u7684\u6807\u9898\u5C42\u7EA7").setDesc("\u9009\u62E9\u8981\u5728\u60AC\u6D6E\u7A97\u53E3\u4E2D\u663E\u793A\u7684\u6807\u9898\u7EA7\u522B").addDropdown((drop) => {
-      drop.addOption("1", "H1");
-      drop.addOption("2", "H2");
-      drop.addOption("3", "H3");
-      drop.addOption("4", "H4");
-      drop.addOption("5", "H5");
-      drop.addOption("6", "H6");
+      [1, 2, 3, 4, 5, 6].forEach((i) => drop.addOption(i.toString(), `H${i}`));
       drop.setValue(this.plugin.settings.headingLevel.toString());
       drop.onChange(async (value) => {
         this.plugin.settings.headingLevel = Number(value);
@@ -485,6 +466,12 @@ var FloatingHeadingSettingTab = class extends import_obsidian.PluginSettingTab {
     new import_obsidian.Setting(containerEl).setName("\u7A97\u53E3\u5706\u89D2").setDesc("\u60AC\u6D6E\u7A97\u53E3\u7684\u5706\u89D2\u5927\u5C0F (px)").addSlider((slider) => {
       slider.setLimits(0, 30, 1).setValue(this.plugin.settings.borderRadius).setDynamicTooltip().onChange(async (value) => {
         this.plugin.settings.borderRadius = value;
+        await this.plugin.saveSettings();
+      });
+    });
+    new import_obsidian.Setting(containerEl).setName("\u7EDF\u4E00\u6587\u672C\u6837\u5F0F (\u5FFD\u7565 Markdown)").setDesc("\u9ED8\u8BA4\u5173\u95ED\u3002\u5F00\u542F\u540E\u5C06\u5F3A\u5236\u62B9\u9664\u6807\u9898\u5185\u7684\u7C97\u4F53\u3001\u659C\u4F53\u3001\u53CC\u94FE\u63A5\u7B49\u6392\u7248\u6837\u5F0F\uFF0C\u4F7F\u5176\u5B8C\u5168\u6DF7\u5165\u53F3\u4FA7\u7684\u666E\u901A\u6587\u672C\u3002").addToggle((toggle) => {
+      toggle.setValue(this.plugin.settings.ignoreMarkdownStyle).onChange(async (value) => {
+        this.plugin.settings.ignoreMarkdownStyle = value;
         await this.plugin.saveSettings();
       });
     });
