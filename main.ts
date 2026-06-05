@@ -23,7 +23,9 @@ interface FloatingHeadingSettings {
     isWidthUnlimited: boolean;
     maxWidth: number;
     isManuallyHidden: boolean;
-    ignoreMarkdownStyle: boolean; // 【新增】：是否忽略 Markdown 样式
+    ignoreMarkdownStyle: boolean;
+    textColor: string;       // 【新增】：自定义字体颜色
+    backgroundColor: string; // 【新增】：自定义背景颜色
 }
 
 const DEFAULT_SETTINGS: FloatingHeadingSettings = {
@@ -36,7 +38,9 @@ const DEFAULT_SETTINGS: FloatingHeadingSettings = {
     isWidthUnlimited: true,
     maxWidth: 300,
     isManuallyHidden: false,
-    ignoreMarkdownStyle: true    // 【新增】：默认关闭
+    ignoreMarkdownStyle: true,
+    textColor: "",           // 默认留空，应用 CSS 的自带变量
+    backgroundColor: ""      // 默认留空，应用 CSS 的自带变量
 };
 
 const headingExp = /^HyperMD-header_HyperMD-header-(\d)$/;
@@ -247,11 +251,23 @@ export default class FloatingHeadingPlugin extends Plugin {
             el.addClass('is-draggable');
         }
 
-        // 【新增】：根据设置开关，动态赋予忽略 Markdown 样式的 class
         if (this.settings.ignoreMarkdownStyle) {
             el.addClass('ignore-markdown-style');
         } else {
             el.removeClass('ignore-markdown-style');
+        }
+
+        // 【新增】：应用自定义颜色到 CSS 变量
+        if (this.settings.textColor) {
+            el.style.setProperty('--fh-text-color', this.settings.textColor);
+        } else {
+            el.style.removeProperty('--fh-text-color');
+        }
+
+        if (this.settings.backgroundColor) {
+            el.style.setProperty('--fh-bg-color', this.settings.backgroundColor);
+        } else {
+            el.style.removeProperty('--fh-bg-color');
         }
     }
 
@@ -578,7 +594,44 @@ class FloatingHeadingSettingTab extends PluginSettingTab {
                     });
             });
 
-        // 【新增】：统一文本样式的开关控制
+        // 【新增】：背景颜色选择器与重置按钮
+        new Setting(containerEl)
+            .setName('背景颜色')
+            .setDesc('自定义悬浮窗口的背景颜色')
+            .addButton(btn => btn
+                .setButtonText('恢复默认')
+                .setTooltip('恢复为主题自带背景色')
+                .onClick(async () => {
+                    this.plugin.settings.backgroundColor = "";
+                    await this.plugin.saveSettings();
+                    this.display(); // 刷新 UI
+                }))
+            .addColorPicker(picker => picker
+                .setValue(this.plugin.settings.backgroundColor || '#000000') // 取色器空值时的占位回落
+                .onChange(async (value) => {
+                    this.plugin.settings.backgroundColor = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        // 【新增】：字体颜色选择器与重置按钮
+        new Setting(containerEl)
+            .setName('字体颜色')
+            .setDesc('自定义悬浮窗口的字体颜色。开启“统一文本样式”时也会覆盖强制为该颜色。')
+            .addButton(btn => btn
+                .setButtonText('恢复默认')
+                .setTooltip('恢复为主题自带文字色')
+                .onClick(async () => {
+                    this.plugin.settings.textColor = "";
+                    await this.plugin.saveSettings();
+                    this.display(); // 刷新 UI
+                }))
+            .addColorPicker(picker => picker
+                .setValue(this.plugin.settings.textColor || '#cccccc') // 取色器空值时的占位回落
+                .onChange(async (value) => {
+                    this.plugin.settings.textColor = value;
+                    await this.plugin.saveSettings();
+                }));
+
         new Setting(containerEl)
             .setName('统一文本样式 (忽略 Markdown)')
             .setDesc('默认关闭。开启后将强制抹除标题内的粗体、斜体、双链接等排版样式，使其完全混入右侧的普通文本。')

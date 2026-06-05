@@ -2,12 +2,12 @@
 .floating-heading-container {
     position: absolute;
     z-index: var(--layer-popover, 50);
-    background-color: var(--background-primary-alt);
+    /* 【修改】：通过 CSS 变量应用设置中的颜色，否则回落到主题默认 */
+    background-color: var(--fh-bg-color, var(--background-primary-alt));
+    color: var(--fh-text-color, var(--text-normal));
     border: 1px solid var(--background-modifier-border);
     padding: 8px 16px;
     box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
-    /* 阴影已合并 */
-    color: var(--text-normal);
     user-select: none;
     transition: box-shadow 0.2s ease, opacity 0.2s ease;
 }
@@ -111,14 +111,15 @@
 }
 
 /* =========================================================
-   新增：统一文本样式 (当开启忽略 Markdown 样式设置时生效)
+   统一文本样式 (当开启忽略 Markdown 样式设置时生效)
    ========================================================= */
 
-/* 强制把粗体、斜体甚至任何高亮背景都抹去，跟右边一模一样 */
+/* 强制把粗体、斜体甚至任何高亮背景都抹去 */
 .floating-heading-container.ignore-markdown-style .floating-heading-text * {
     font-weight: inherit !important;
     font-style: inherit !important;
-    color: var(--text-normal) !important;
+    /* 【修改】：保证自定义颜色在“忽略 Markdown 样式”下也完全生效 */
+    color: var(--fh-text-color, var(--text-normal)) !important;
     text-decoration: none !important;
     background: transparent !important;
     border: none !important;
@@ -135,5 +136,6 @@
 /* 强行取消链接自带的下划线和高亮颜色 */
 .floating-heading-container.ignore-markdown-style .floating-heading-text .internal-link,
 .floating-heading-container.ignore-markdown-style .floating-heading-text a {
-    color: var(--text-normal) !important;
+    /* 【修改】：双向链接等标签也会使用自定义配置的颜色 */
+    color: var(--fh-text-color, var(--text-normal)) !important;
 }

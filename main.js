@@ -35,8 +35,11 @@ var DEFAULT_SETTINGS = {
   isWidthUnlimited: true,
   maxWidth: 300,
   isManuallyHidden: false,
-  ignoreMarkdownStyle: true
-  // 【新增】：默认关闭
+  ignoreMarkdownStyle: true,
+  textColor: "",
+  // 默认留空，应用 CSS 的自带变量
+  backgroundColor: ""
+  // 默认留空，应用 CSS 的自带变量
 };
 var headingExp = /^HyperMD-header_HyperMD-header-(\d)$/;
 function getDistanceFromContentToScroller(view) {
@@ -219,6 +222,16 @@ var FloatingHeadingPlugin = class extends import_obsidian.Plugin {
       el.addClass("ignore-markdown-style");
     } else {
       el.removeClass("ignore-markdown-style");
+    }
+    if (this.settings.textColor) {
+      el.style.setProperty("--fh-text-color", this.settings.textColor);
+    } else {
+      el.style.removeProperty("--fh-text-color");
+    }
+    if (this.settings.backgroundColor) {
+      el.style.setProperty("--fh-bg-color", this.settings.backgroundColor);
+    } else {
+      el.style.removeProperty("--fh-bg-color");
     }
   }
   createFloatingWindow() {
@@ -469,6 +482,22 @@ var FloatingHeadingSettingTab = class extends import_obsidian.PluginSettingTab {
         await this.plugin.saveSettings();
       });
     });
+    new import_obsidian.Setting(containerEl).setName("\u80CC\u666F\u989C\u8272").setDesc("\u81EA\u5B9A\u4E49\u60AC\u6D6E\u7A97\u53E3\u7684\u80CC\u666F\u989C\u8272").addButton((btn) => btn.setButtonText("\u6062\u590D\u9ED8\u8BA4").setTooltip("\u6062\u590D\u4E3A\u4E3B\u9898\u81EA\u5E26\u80CC\u666F\u8272").onClick(async () => {
+      this.plugin.settings.backgroundColor = "";
+      await this.plugin.saveSettings();
+      this.display();
+    })).addColorPicker((picker) => picker.setValue(this.plugin.settings.backgroundColor || "#000000").onChange(async (value) => {
+      this.plugin.settings.backgroundColor = value;
+      await this.plugin.saveSettings();
+    }));
+    new import_obsidian.Setting(containerEl).setName("\u5B57\u4F53\u989C\u8272").setDesc("\u81EA\u5B9A\u4E49\u60AC\u6D6E\u7A97\u53E3\u7684\u5B57\u4F53\u989C\u8272\u3002\u5F00\u542F\u201C\u7EDF\u4E00\u6587\u672C\u6837\u5F0F\u201D\u65F6\u4E5F\u4F1A\u8986\u76D6\u5F3A\u5236\u4E3A\u8BE5\u989C\u8272\u3002").addButton((btn) => btn.setButtonText("\u6062\u590D\u9ED8\u8BA4").setTooltip("\u6062\u590D\u4E3A\u4E3B\u9898\u81EA\u5E26\u6587\u5B57\u8272").onClick(async () => {
+      this.plugin.settings.textColor = "";
+      await this.plugin.saveSettings();
+      this.display();
+    })).addColorPicker((picker) => picker.setValue(this.plugin.settings.textColor || "#cccccc").onChange(async (value) => {
+      this.plugin.settings.textColor = value;
+      await this.plugin.saveSettings();
+    }));
     new import_obsidian.Setting(containerEl).setName("\u7EDF\u4E00\u6587\u672C\u6837\u5F0F (\u5FFD\u7565 Markdown)").setDesc("\u9ED8\u8BA4\u5173\u95ED\u3002\u5F00\u542F\u540E\u5C06\u5F3A\u5236\u62B9\u9664\u6807\u9898\u5185\u7684\u7C97\u4F53\u3001\u659C\u4F53\u3001\u53CC\u94FE\u63A5\u7B49\u6392\u7248\u6837\u5F0F\uFF0C\u4F7F\u5176\u5B8C\u5168\u6DF7\u5165\u53F3\u4FA7\u7684\u666E\u901A\u6587\u672C\u3002").addToggle((toggle) => {
       toggle.setValue(this.plugin.settings.ignoreMarkdownStyle).onChange(async (value) => {
         this.plugin.settings.ignoreMarkdownStyle = value;
