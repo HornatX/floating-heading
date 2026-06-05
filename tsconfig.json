@@ -1,13 +1,13 @@
 {
   "compilerOptions": {
-    "target": "ES2017",
-    "module": "commonjs",
-    "lib": ["dom", "es2017"],
-    "allowJs": true,
-    "strict": false,
+    "target": "ES2022",                  // <--- 改成 ES2022 或 ES2020
+    "lib": ["DOM", "ES2022"],            // <--- 确保这里有较新的 ES 库
+    "module": "CommonJS",
+    "strict": true,
+    "moduleResolution": "bundler",
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["main.ts"]
+  "include": ["**/*.ts"]
 }

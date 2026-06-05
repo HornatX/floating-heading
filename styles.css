@@ -2,12 +2,11 @@
 .floating-heading-container {
     position: absolute;
     z-index: var(--layer-popover, 50);
-    background-color: var(--background-primary-alt);
+    background-color: var(--fh-bg-color, var(--background-primary-alt));
+    color: var(--fh-text-color, var(--text-normal));
     border: 1px solid var(--background-modifier-border);
     padding: 8px 16px;
     box-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
-    /* 阴影已合并 */
-    color: var(--text-normal);
     user-select: none;
     transition: box-shadow 0.2s ease, opacity 0.2s ease;
 }
@@ -86,12 +85,12 @@
 }
 
 /* =========== 当没有标题时显示的 Logo 模式 =========== */
-.floating-heading-container.is-empty-logo {
+body .app-container .floating-heading-container.is-empty-logo {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 0 !important;
-    border-radius: 50% !important;
+    padding: 0;
+    border-radius: 50%;
 }
 
 /* Logo 模式下的 Obsidian 原生图标容器 */
@@ -111,29 +110,69 @@
 }
 
 /* =========================================================
-   新增：统一文本样式 (当开启忽略 Markdown 样式设置时生效)
+   统一文本样式 (当开启忽略 Markdown 样式设置时生效)
+   通过叠加 DOM 层级拔高权重，取代所有 !important 标记。
    ========================================================= */
 
-/* 强制把粗体、斜体甚至任何高亮背景都抹去，跟右边一模一样 */
-.floating-heading-container.ignore-markdown-style .floating-heading-text * {
-    font-weight: inherit !important;
-    font-style: inherit !important;
-    color: var(--text-normal) !important;
-    text-decoration: none !important;
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
+body .app-container .workspace .floating-heading-container.ignore-markdown-style .floating-heading-text,
+body .app-container .workspace .floating-heading-container.ignore-markdown-style .floating-heading-text *,
+.theme-dark .floating-heading-container.ignore-markdown-style .floating-heading-text *,
+.theme-light .floating-heading-container.ignore-markdown-style .floating-heading-text * {
+    font-weight: inherit;
+    font-style: inherit;
+    color: var(--fh-text-color, var(--text-normal));
+    text-decoration: none;
+    background: transparent;
+    border: none;
+    box-shadow: none;
 }
 
-/* 去除内部可能的 Tag 的多余内外边距 */
-.floating-heading-container.ignore-markdown-style .floating-heading-text .tag {
+body .app-container .workspace .floating-heading-container.ignore-markdown-style .floating-heading-text .tag,
+.theme-dark .floating-heading-container.ignore-markdown-style .floating-heading-text .tag,
+.theme-light .floating-heading-container.ignore-markdown-style .floating-heading-text .tag {
+    padding: 0;
+    margin: 0;
+    font-size: inherit;
+}
+
+body .app-container .workspace .floating-heading-container.ignore-markdown-style .floating-heading-text .internal-link,
+body .app-container .workspace .floating-heading-container.ignore-markdown-style .floating-heading-text a,
+.theme-dark .floating-heading-container.ignore-markdown-style .floating-heading-text a,
+.theme-light .floating-heading-container.ignore-markdown-style .floating-heading-text a {
+    color: var(--fh-text-color, var(--text-normal));
+}
+
+/* =========== 当没有标题时显示的 Logo 模式 =========== */
+/* 增加权重确保居中生效 */
+body .app-container .floating-heading-container.is-empty-logo {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
     padding: 0 !important;
-    margin: 0 !important;
-    font-size: inherit !important;
+    border-radius: 50% !important;
+    aspect-ratio: 1 / 1; /* 强制宽高比 1:1，防止变成椭圆 */
+    overflow: hidden;    /* 隐藏圆圈外的多余部分（比如那个小箭头） */
 }
 
-/* 强行取消链接自带的下划线和高亮颜色 */
-.floating-heading-container.ignore-markdown-style .floating-heading-text .internal-link,
-.floating-heading-container.ignore-markdown-style .floating-heading-text a {
-    color: var(--text-normal) !important;
+/* Logo 模式下的图标容器 */
+.floating-heading-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    line-height: 0;      /* 关键：消除文字行高导致的重心下移 */
+}
+
+.floating-heading-icon svg {
+    /* 图标大小随字体大小缩放，但不超过容器 */
+    width: 0.8em; 
+    height: 0.8em;
+    display: block;
+    stroke-width: 2.5px;
+}
+
+/* 在 Logo 模式下隐藏缩放手柄，避免它们在圆圈边缘乱跑 */
+.floating-heading-container.is-empty-logo .resize-handle {
+    display: none !important;
 }
