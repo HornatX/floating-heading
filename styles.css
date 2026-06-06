@@ -162,6 +162,7 @@ body .app-container .floating-heading-container.is-empty-logo {
     width: 100%;
     height: 100%;
     line-height: 0;      /* 关键：消除文字行高导致的重心下移 */
+    pointer-events: none; /* 让鼠标事件穿透图标，由容器接收，确保拖拽跟手 */
 }
 
 .floating-heading-icon svg {
