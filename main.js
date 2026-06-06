@@ -350,7 +350,7 @@ var FloatingHeadingPlugin = class extends import_obsidian.Plugin {
     let initialX = 0, initialY = 0;
     const onMouseDown = (e) => {
       const target = e.target;
-      if (!target || !target.instanceOf(HTMLElement)) return;
+      if (!target || !target.instanceOf(Element)) return;
       if (e.button !== 0 || target.classList.contains("resize-handle")) return;
       hasMoved = false;
       if (this.settings.isLocked) return;
@@ -388,7 +388,7 @@ var FloatingHeadingPlugin = class extends import_obsidian.Plugin {
     };
     el.addEventListener("click", (e) => {
       const target = e.target;
-      if (!target || !target.instanceOf(HTMLElement)) return;
+      if (!target || !target.instanceOf(Element)) return;
       if (e.button !== 0 || target.classList.contains("resize-handle")) return;
       if (!hasMoved && this.activeEditorView && this.currentHeadingPos !== null) {
         this.activeEditorView.dispatch({

@@ -429,7 +429,7 @@ export default class FloatingHeadingPlugin extends Plugin {
 
         const onMouseDown = (e: MouseEvent) => {
             const target = e.target as Node | null;
-            if (!target || !target.instanceOf(HTMLElement)) return;
+            if (!target || !target.instanceOf(Element)) return;
             if (e.button !== 0 || target.classList.contains('resize-handle')) return;
 
             hasMoved = false;
@@ -476,7 +476,7 @@ export default class FloatingHeadingPlugin extends Plugin {
 
         el.addEventListener('click', (e: MouseEvent) => {
             const target = e.target as Node | null;
-            if (!target || !target.instanceOf(HTMLElement)) return;
+            if (!target || !target.instanceOf(Element)) return;
             if (e.button !== 0 || target.classList.contains('resize-handle')) return;
 
             if (!hasMoved && this.activeEditorView && this.currentHeadingPos !== null) {
