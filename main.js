@@ -91,7 +91,7 @@ var FloatingHeadingPlugin = class extends import_obsidian.Plugin {
       name: "\u5207\u6362\u60AC\u6D6E\u6807\u9898\u7A97\u53E3\u663E\u9690",
       callback: () => {
         this.settings.isManuallyHidden = !this.settings.isManuallyHidden;
-        this.saveSettings().then(() => {
+        void this.saveSettings().then(() => {
           this.updateVisibility();
           new import_obsidian.Notice(this.settings.isManuallyHidden ? "\u60AC\u6D6E\u6807\u9898\u5DF2\u9690\u85CF" : "\u60AC\u6D6E\u6807\u9898\u5DF2\u663E\u793A", 1500);
         }).catch(console.error);
@@ -259,7 +259,7 @@ var FloatingHeadingPlugin = class extends import_obsidian.Plugin {
       menu.addItem((item) => {
         item.setTitle(this.settings.isLocked ? "\u89E3\u9501\u7A97\u53E3" : "\u9501\u5B9A\u7A97\u53E3").setIcon(this.settings.isLocked ? "unlock" : "lock").onClick(() => {
           this.settings.isLocked = !this.settings.isLocked;
-          this.saveSettings().then(() => {
+          void this.saveSettings().then(() => {
             new import_obsidian.Notice(this.settings.isLocked ? "\u60AC\u6D6E\u6807\u9898\u5DF2\u9501\u5B9A \u{1F512}" : "\u60AC\u6D6E\u6807\u9898\u5DF2\u89E3\u9501 \u{1F513}", 1500);
           }).catch(console.error);
         });
@@ -272,7 +272,7 @@ var FloatingHeadingPlugin = class extends import_obsidian.Plugin {
           submenu.addItem((subItem) => {
             subItem.setTitle(`H${i}`).setChecked(this.settings.headingLevel === i).onClick(() => {
               this.settings.headingLevel = i;
-              this.saveSettings().then(() => this.forceUpdateHeaders()).catch(console.error);
+              void this.saveSettings().then(() => this.forceUpdateHeaders()).catch(console.error);
             });
           });
         }
@@ -336,7 +336,7 @@ var FloatingHeadingPlugin = class extends import_obsidian.Plugin {
         currentHandle = null;
         window.removeEventListener("mousemove", onMouseMove);
         window.removeEventListener("mouseup", onMouseUp);
-        this.saveSettings().catch(console.error);
+        void this.saveSettings().catch(console.error);
       }
     };
     this.resizeHandleRight.addEventListener("mousedown", onMouseDown);
@@ -382,7 +382,7 @@ var FloatingHeadingPlugin = class extends import_obsidian.Plugin {
         window.removeEventListener("mousemove", onMouseMove);
         window.removeEventListener("mouseup", onMouseUp);
         if (hasMoved) {
-          this.saveSettings().catch(console.error);
+          void this.saveSettings().catch(console.error);
         }
       }
     };
@@ -492,7 +492,7 @@ var FloatingHeadingSettingTab = class extends import_obsidian.PluginSettingTab {
       drop.setValue(this.plugin.settings.headingLevel.toString());
       drop.onChange((value) => {
         this.plugin.settings.headingLevel = Number(value);
-        this.plugin.saveSettings().then(() => {
+        void this.plugin.saveSettings().then(() => {
           this.plugin.forceUpdateHeaders();
         }).catch(console.error);
       });
@@ -500,54 +500,54 @@ var FloatingHeadingSettingTab = class extends import_obsidian.PluginSettingTab {
     new import_obsidian.Setting(containerEl).setName("\u5B57\u4F53\u5927\u5C0F").setDesc("\u60AC\u6D6E\u7A97\u53E3\u4E2D\u6587\u5B57\u7684\u5927\u5C0F (px)").addSlider((slider) => {
       slider.setLimits(10, 100, 1).setValue(this.plugin.settings.fontSize).setDynamicTooltip().onChange((value) => {
         this.plugin.settings.fontSize = value;
-        this.plugin.saveSettings().catch(console.error);
+        void this.plugin.saveSettings().catch(console.error);
       });
     });
     new import_obsidian.Setting(containerEl).setName("\u7A97\u53E3\u5706\u89D2").setDesc("\u60AC\u6D6E\u7A97\u53E3\u7684\u5706\u89D2\u5927\u5C0F (px)").addSlider((slider) => {
       slider.setLimits(0, 150, 1).setValue(this.plugin.settings.borderRadius).setDynamicTooltip().onChange((value) => {
         this.plugin.settings.borderRadius = value;
-        this.plugin.saveSettings().catch(console.error);
+        void this.plugin.saveSettings().catch(console.error);
       });
     });
     let bgPickerComponent;
     new import_obsidian.Setting(containerEl).setName("\u80CC\u666F\u989C\u8272").setDesc("\u81EA\u5B9A\u4E49\u60AC\u6D6E\u7A97\u53E3\u7684\u80CC\u666F\u989C\u8272").addButton((btn) => {
       btn.setButtonText("\u6062\u590D\u9ED8\u8BA4").setTooltip("\u6062\u590D\u4E3A\u4E3B\u9898\u81EA\u5E26\u80CC\u666F\u8272").onClick(() => {
         this.plugin.settings.backgroundColor = "";
-        this.plugin.saveSettings().catch(console.error);
+        void this.plugin.saveSettings().catch(console.error);
         bgPickerComponent?.setValue("#000000");
       });
     }).addColorPicker((picker) => {
       bgPickerComponent = picker;
       picker.setValue(this.plugin.settings.backgroundColor || "#000000").onChange((value) => {
         this.plugin.settings.backgroundColor = value;
-        this.plugin.saveSettings().catch(console.error);
+        void this.plugin.saveSettings().catch(console.error);
       });
     });
     let textPickerComponent;
     new import_obsidian.Setting(containerEl).setName("\u5B57\u4F53\u989C\u8272").setDesc("\u81EA\u5B9A\u4E49\u60AC\u6D6E\u7A97\u53E3\u7684\u5B57\u4F53\u989C\u8272\u3002\u5F00\u542F\u201C\u7EDF\u4E00\u6587\u672C\u6837\u5F0F\u201D\u65F6\u4E5F\u4F1A\u8986\u76D6\u5F3A\u5236\u4E3A\u8BE5\u989C\u8272\u3002").addButton((btn) => {
       btn.setButtonText("\u6062\u590D\u9ED8\u8BA4").setTooltip("\u6062\u590D\u4E3A\u4E3B\u9898\u81EA\u5E26\u6587\u5B57\u8272").onClick(() => {
         this.plugin.settings.textColor = "";
-        this.plugin.saveSettings().catch(console.error);
+        void this.plugin.saveSettings().catch(console.error);
         textPickerComponent?.setValue("#cccccc");
       });
     }).addColorPicker((picker) => {
       textPickerComponent = picker;
       picker.setValue(this.plugin.settings.textColor || "#cccccc").onChange((value) => {
         this.plugin.settings.textColor = value;
-        this.plugin.saveSettings().catch(console.error);
+        void this.plugin.saveSettings().catch(console.error);
       });
     });
     new import_obsidian.Setting(containerEl).setName("\u7EDF\u4E00\u6587\u672C\u6837\u5F0F (\u5FFD\u7565 Markdown)").setDesc("\u9ED8\u8BA4\u5173\u95ED\u3002\u5F00\u542F\u540E\u5C06\u5F3A\u5236\u62B9\u9664\u6807\u9898\u5185\u7684\u7C97\u4F53\u3001\u659C\u4F53\u3001\u53CC\u94FE\u63A5\u7B49\u6392\u7248\u6837\u5F0F\uFF0C\u4F7F\u5176\u5B8C\u5168\u6DF7\u5165\u53F3\u4FA7\u7684\u666E\u901A\u6587\u672C\u3002").addToggle((toggle) => {
       toggle.setValue(this.plugin.settings.ignoreMarkdownStyle).onChange((value) => {
         this.plugin.settings.ignoreMarkdownStyle = value;
-        this.plugin.saveSettings().catch(console.error);
+        void this.plugin.saveSettings().catch(console.error);
       });
     });
     let maxWidthSetting;
     new import_obsidian.Setting(containerEl).setName("\u65E0\u9650\u5236\u7A97\u53E3\u957F\u5EA6").setDesc("\u52FE\u9009\u540E\u7A97\u53E3\u957F\u5EA6\u968F\u6807\u9898\u6587\u5B57\u81EA\u52A8\u5EF6\u4F38\u3002\u53D6\u6D88\u52FE\u9009\u53EF\u9650\u5236\u6700\u5927\u957F\u5EA6\u3002").addToggle((toggle) => {
       toggle.setValue(this.plugin.settings.isWidthUnlimited).onChange((value) => {
         this.plugin.settings.isWidthUnlimited = value;
-        this.plugin.saveSettings().catch(console.error);
+        void this.plugin.saveSettings().catch(console.error);
         this.plugin.forceUpdateHeaders();
         if (maxWidthSetting) {
           maxWidthSetting.settingEl.setCssStyles({ display: value ? "none" : "" });
@@ -557,7 +557,7 @@ var FloatingHeadingSettingTab = class extends import_obsidian.PluginSettingTab {
     maxWidthSetting = new import_obsidian.Setting(containerEl).setName("\u7A97\u53E3\u6700\u5927\u957F\u5EA6").setDesc("\u8BBE\u7F6E\u60AC\u6D6E\u7A97\u53E3\u7684\u6700\u5927\u957F\u5EA6 (px)\uFF0C\u6807\u9898\u8D85\u51FA\u65F6\u4F1A\u81EA\u52A8\u7701\u7565 (...)\u3002").addSlider((slider) => {
       slider.setLimits(100, 1e3, 10).setValue(this.plugin.settings.maxWidth).setDynamicTooltip().onChange((value) => {
         this.plugin.settings.maxWidth = value;
-        this.plugin.saveSettings().then(() => {
+        void this.plugin.saveSettings().then(() => {
           this.plugin.forceUpdateHeaders();
         }).catch(console.error);
       });
@@ -566,7 +566,7 @@ var FloatingHeadingSettingTab = class extends import_obsidian.PluginSettingTab {
     new import_obsidian.Setting(containerEl).setName("\u9501\u5B9A\u7A97\u53E3\u4F4D\u7F6E").setDesc("\u4F60\u4E5F\u53EF\u4EE5\u5728\u60AC\u6D6E\u7A97\u53E3\u4E0A\u70B9\u51FB\u3010\u53F3\u952E\u3011\u76F4\u63A5\u9501\u5B9A/\u89E3\u9501\u3002").addToggle((toggle) => {
       toggle.setValue(this.plugin.settings.isLocked).onChange((value) => {
         this.plugin.settings.isLocked = value;
-        this.plugin.saveSettings().catch(console.error);
+        void this.plugin.saveSettings().catch(console.error);
       });
     });
   }
