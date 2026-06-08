@@ -1,13 +1,11 @@
 {
   "scripts": {
-    "build": "esbuild main.ts --bundle --external:obsidian --external:electron --external:@codemirror/state --external:@codemirror/view --external:@codemirror/language --external:@lezer/common --external:@lezer/highlight --external:@lezer/lr --outfile=main.js --format=cjs --platform=node",
-    "postbuild": "powershell -ExecutionPolicy Bypass -File \"Z:/kaifa/整体.ps1\""
+    "build": "esbuild main.ts --bundle --external:obsidian --external:electron --external:@codemirror/state --external:@codemirror/view --outfile=main.js --format=cjs --platform=node",
+    "postbuild": "powershell -ExecutionPolicy Bypass -File \"./整体.ps1\""
   },
   "devDependencies": {
-    "@codemirror/language": "^6.12.3",
     "@codemirror/state": "^6.5.0",
     "@codemirror/view": "^6.38.6",
-    "@types/node": "^25.9.2",
     "esbuild": "^0.28.0",
     "obsidian": "^1.12.3"
   }
